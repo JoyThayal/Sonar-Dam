@@ -8,10 +8,10 @@ interface NavbarProps {
 }
 
 const languageOptions: { code: Language; label: string }[] = [
-  { code: "en", label: "EN" },
-  { code: "hi", label: "हिन्दी" },
   { code: "bn", label: "বাংলা" },
   { code: "or", label: "ଓଡ଼ିଆ" },
+  { code: "en", label: "EN" },
+  { code: "hi", label: "हिन्दी" },
 ];
 
 export default function Navbar({
@@ -23,31 +23,43 @@ export default function Navbar({
   const t = translations[lang];
 
   return (
-    <header className="border-b border-stone-200/80 bg-[#FAF9F6]/80 backdrop-blur-md sticky top-0 z-10">
-      <div className="max-w-4xl mx-auto px-4 sm:px-5 h-16 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-600 animate-pulse" />
-          <div>
-            <h1 className="text-base sm:text-lg font-semibold tracking-tight text-stone-900 leading-none">
-              {t.brand}
-            </h1>
-            <p className="hidden sm:block text-[11px] uppercase tracking-widest text-stone-400 mt-1">
-              {t.subtitle}
-            </p>
+    <header className="border-b border-stone-200/80 bg-[#FAF9F6]/90 backdrop-blur-md sticky top-0 z-20">
+      <div className="max-w-4xl mx-auto px-4 sm:px-5 py-3 sm:py-0 sm:h-16 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+        {/* Top Row: Brand Name & Refresh Button */}
+        <div className="flex items-center justify-between w-full sm:w-auto">
+          <div className="flex items-center gap-2.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-600 animate-pulse shrink-0" />
+            <div>
+              <h1 className="text-lg font-bold tracking-tight text-stone-900 leading-none">
+                {t.brand}
+              </h1>
+              <p className="text-[11px] uppercase tracking-widest text-stone-400 mt-1">
+                {t.subtitle}
+              </p>
+            </div>
           </div>
+
+          {/* Mobile Refresh Button */}
+          <button
+            onClick={onRefresh}
+            disabled={loading}
+            className="sm:hidden text-xs font-medium text-stone-700 active:scale-95 border border-stone-200 bg-white px-3 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-50"
+          >
+            {loading ? "..." : `↻ ${t.refresh}`}
+          </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Language Switcher */}
-          <div className="flex items-center bg-stone-200/70 p-0.5 rounded-lg text-xs font-medium">
+        {/* Bottom Row on Mobile / Right Side on Desktop: Language Switcher */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-4 sm:flex items-center bg-stone-200/70 p-1 rounded-xl text-xs font-medium w-full sm:w-auto">
             {languageOptions.map((item) => (
               <button
                 key={item.code}
                 onClick={() => setLang(item.code)}
-                className={`px-2 sm:px-2.5 py-1 rounded-md transition cursor-pointer ${
+                className={`py-1.5 sm:px-2.5 sm:py-1 rounded-lg text-center transition cursor-pointer ${
                   lang === item.code
-                    ? "bg-white text-stone-900 shadow-xs font-semibold"
-                    : "text-stone-500 hover:text-stone-800"
+                    ? "bg-white text-stone-900 shadow-xs font-bold"
+                    : "text-stone-600 hover:text-stone-900"
                 }`}
               >
                 {item.label}
@@ -55,10 +67,11 @@ export default function Navbar({
             ))}
           </div>
 
+          {/* Desktop Refresh Button */}
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="text-xs font-medium text-stone-600 hover:text-stone-900 border border-stone-200 bg-white px-2.5 sm:px-3 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0"
+            className="hidden sm:inline-flex text-xs font-medium text-stone-600 hover:text-stone-900 border border-stone-200 bg-white px-3 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0"
           >
             {loading ? "..." : `↻ ${t.refresh}`}
           </button>

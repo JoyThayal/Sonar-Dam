@@ -22,7 +22,7 @@ export default function PriceCalendar({ lang, history }: PriceCalendarProps) {
   const t = translations[lang];
   const [unit, setUnit] = useState<WeightUnit>("10g");
 
-  // ওজন অনুযায়ী গুণক (Multiplier)
+  // ওজন অনুযায়ী গুণক (Multiplier)
   const multiplier = unit === "10g" ? 1 : unit === "bhori" ? 1.1664 : 0.1;
 
   const calendarDays = useMemo(() => {
@@ -102,9 +102,9 @@ export default function PriceCalendar({ lang, history }: PriceCalendarProps) {
   if (calendarDays.length === 0) return null;
 
   return (
-    <section className="bg-white rounded-2xl border border-stone-200/80 p-6 sm:p-8">
-      {/* Header + Weight Switcher */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <section className="bg-white rounded-2xl border border-stone-200/80 p-5 sm:p-8">
+      {/* Header + Mobile-Friendly Weight Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5 sm:mb-6">
         <div>
           <h3 className="text-base font-semibold text-stone-900">
             {t.calendarTitle}
@@ -112,8 +112,8 @@ export default function PriceCalendar({ lang, history }: PriceCalendarProps) {
           <p className="text-xs text-stone-400 mt-1">{t.calendarSub}</p>
         </div>
 
-        {/* Unit Switcher Pill */}
-        <div className="inline-flex self-start sm:self-auto items-center bg-stone-100 p-1 rounded-xl border border-stone-200/70 text-xs font-medium">
+        {/* Full-width on Mobile, Auto-width on Desktop */}
+        <div className="grid grid-cols-3 sm:inline-flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200/70 text-xs font-medium w-full sm:w-auto">
           {(
             [
               { key: "10g", label: t.unit10g },
@@ -124,7 +124,7 @@ export default function PriceCalendar({ lang, history }: PriceCalendarProps) {
             <button
               key={tab.key}
               onClick={() => setUnit(tab.key)}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
+              className={`py-2 sm:px-3 sm:py-1.5 rounded-lg text-center transition cursor-pointer truncate ${
                 unit === tab.key
                   ? "bg-stone-900 text-white shadow-xs font-semibold"
                   : "text-stone-600 hover:text-stone-900"
@@ -137,7 +137,7 @@ export default function PriceCalendar({ lang, history }: PriceCalendarProps) {
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 min-[430px]:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3">
         {calendarDays.map((item) => {
           const isUp = item.diff > 0;
           const isDown = item.diff < 0;
@@ -145,7 +145,7 @@ export default function PriceCalendar({ lang, history }: PriceCalendarProps) {
           return (
             <div
               key={item.dateStr}
-              className={`rounded-xl p-3.5 border transition-all flex flex-col justify-between ${
+              className={`rounded-xl p-3 sm:p-3.5 border transition-all flex flex-col justify-between ${
                 item.isToday
                   ? "bg-stone-900 text-stone-50 border-stone-900 shadow-md"
                   : "bg-[#FAF9F6] text-stone-800 border-stone-200/70 hover:border-stone-300"

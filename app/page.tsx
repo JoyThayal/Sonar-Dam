@@ -97,7 +97,7 @@ export default function Home() {
         loading={loading}
       />
 
-      <main className="max-w-4xl mx-auto px-5 py-8 sm:py-12 space-y-8">
+      <main className="max-w-4xl mx-auto px-4 sm:px-5 py-6 sm:py-12 space-y-6 sm:space-y-8">
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
           <div className="flex items-center gap-2">
             <span className="font-medium text-stone-800">{t.city}</span>
@@ -145,13 +145,21 @@ export default function Home() {
                 />
               </div>
 
-              <Calculator
-                lang={lang}
-                rate22k={rates.gold22k_1g}
-                rate24k={rates.gold24k_1g}
-              />
+              <div className="flex flex-col gap-6 sm:gap-8">
+                {/* মোবাইলে ক্যালেন্ডার আগে দেখাবে (order-1), ডেক্সটপে পরে (md:order-2) */}
+                <div className="order-1 md:order-2">
+                  <PriceCalendar lang={lang} history={history} />
+                </div>
 
-              <PriceCalendar lang={lang} history={history} />
+                {/* মোবাইলে ক্যালকুলেটর নিচে থাকবে (order-2), ডেক্সটপে আগে (md:order-1) */}
+                <div className="order-2 md:order-1">
+                  <Calculator
+                    lang={lang}
+                    rate22k={rates.gold22k_1g}
+                    rate24k={rates.gold24k_1g}
+                  />
+                </div>
+              </div>
             </>
           )
         )}
