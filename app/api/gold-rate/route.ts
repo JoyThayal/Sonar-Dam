@@ -1,23 +1,67 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+const CACHE_DURATION_MS = 3 * 60 * 60 * 1000; // ৩ ঘণ্টা ক্যাশ থাকবে
+
 export async function GET() {
   const apiKey = process.env.GOLD_API_KEY;
-
   const KOLKATA_LOCAL_PREMIUM_PER_GRAM = 85;
   const GST_PERCENTAGE = 0.03;
 
   try {
-    if (!apiKey) {
-      throw new Error("API Key পাওয়া যায়নি");
+    const todayIST = new Date().toLocaleDateString("en-CA", {
+      timeZone: "Asia/Kolkata",
+    });
+
+    // ১. প্রথমে Supabase থেকে সব সেভ করা দিনের ডেটা নিয়ে আসা
+    const { data: historyData } = await supabase
+      .from("daily_gold_rates")
+      .select("*")
+      .order("rate_date", { ascending: false })
+      .limit(31);
+
+    const todayRecord = historyData?.find(
+      (item) => item.rate_date === todayIST,
+    );
+
+    // ২. আজকের ডেটা যদি ৩ ঘণ্টার কম পুরনো হয়, তবে API কল না করে ডাটাবেস থেকেই ফেরত দেবে
+    if (todayRecord && todayRecord.updated_at) {
+      const lastUpdatedTime = new Date(todayRecord.updated_at).getTime();
+      const nowTime = Date.now();
+
+      if (nowTime - lastUpdatedTime < CACHE_DURATION_MS) {
+        return NextResponse.json({
+          source: "cache",
+          city: "Kolkata",
+          updatedAt: new Date(todayRecord.updated_at).toLocaleTimeString(
+            "en-IN",
+            {
+              timeZone: "Asia/Kolkata",
+              hour: "2-digit",
+              minute: "2-digit",
+            },
+          ),
+          rates: {
+            gold24k_1g: todayRecord.gold24k_1g,
+            gold24k_10g: todayRecord.gold24k_10g,
+            gold22k_1g: todayRecord.gold22k_1g,
+            gold22k_10g: todayRecord.gold22k_10g,
+          },
+          history: historyData || [],
+        });
+      }
     }
 
-    // ১. লাইভ API থেকে আজকের দাম আনা
+    // ৩. ৩ ঘণ্টা পার হয়ে গেলে বা আজকের ডেটা না থাকলে লাইভ API থেকে দাম আনা
+    if (!apiKey) {
+      throw new Error("API Key পাওয়া যায়নি");
+    }
+
     const response = await fetch(
       "https://api.goldprice.dev/v1/convert?from=XAU&to=INR&amount=1&unit=gram",
       {
         headers: { Authorization: `Bearer ${apiKey}` },
-        next: { revalidate: 1800 }, // প্রতি ৩০ মিনিট পরপর আপডেট
+        cache: "no-store",
       },
     );
 
@@ -38,12 +82,9 @@ export async function GET() {
       (raw22k + KOLKATA_LOCAL_PREMIUM_PER_GRAM) * (1 + GST_PERCENTAGE),
     );
 
-    // ২. ভারতের বর্তমান তারিখ বের করা (YYYY-MM-DD)
-    const todayIST = new Date().toLocaleDateString("en-CA", {
-      timeZone: "Asia/Kolkata",
-    });
+    const nowISO = new Date().toISOString();
 
-    // ৩. আজকের আসল দাম Supabase-এ সেভ বা আপডেট করা
+    // ৪. নতুন দাম Supabase-এ সেভ বা আপডেট করা
     await supabase.from("daily_gold_rates").upsert(
       {
         rate_date: todayIST,
@@ -51,22 +92,30 @@ export async function GET() {
         gold22k_10g: final22k * 10,
         gold24k_1g: final24k,
         gold24k_10g: final24k * 10,
-        updated_at: new Date().toISOString(),
+        updated_at: nowISO,
       },
       { onConflict: "rate_date" },
     );
 
-    // ৪. Supabase থেকে সব সেভ করা দিনের আসল ডেটা নিয়ে আসা (নতুন থেকে পুরনো)
-    const { data: historyData } = await supabase
-      .from("daily_gold_rates")
-      .select("*")
-      .order("rate_date", { ascending: false })
-      .limit(31);
+    // আপডেটেড হিস্ট্রি লিস্ট তৈরি
+    const updatedHistory = historyData
+      ? [
+          {
+            rate_date: todayIST,
+            gold22k_1g: final22k,
+            gold22k_10g: final22k * 10,
+            gold24k_1g: final24k,
+            gold24k_10g: final24k * 10,
+            updated_at: nowISO,
+          },
+          ...historyData.filter((item) => item.rate_date !== todayIST),
+        ]
+      : [];
 
     return NextResponse.json({
       source: "live",
       city: "Kolkata",
-      updatedAt: new Date().toLocaleTimeString("en-IN", {
+      updatedAt: new Date(nowISO).toLocaleTimeString("en-IN", {
         timeZone: "Asia/Kolkata",
         hour: "2-digit",
         minute: "2-digit",
@@ -77,11 +126,11 @@ export async function GET() {
         gold22k_1g: final22k,
         gold22k_10g: final22k * 10,
       },
-      history: historyData || [],
+      history: updatedHistory,
     });
   } catch (error) {
     return NextResponse.json(
-      { error: "সোনার দাম লোড বা সেভ করা সম্ভব হয়নি।" },
+      { error: "সোনার দাম লোড বা সেভ করা সম্ভব হয়নি।" },
       { status: 500 },
     );
   }

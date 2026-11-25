@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import RateCard from "@/components/RateCard";
 import Calculator from "@/components/Calculator";
 import PriceCalendar, { HistoryRecord } from "@/components/PriceCalendar";
+import BottomNav, { MobileTab } from "@/components/BottomNav";
 
 interface GoldRates {
   gold24k_1g: number;
@@ -14,7 +15,6 @@ interface GoldRates {
   gold22k_10g: number;
 }
 
-// ব্রাউজার মাউন্ট হয়েছে কি না তা চেক করার জন্য (কোনো React 19 লিন্টার ওয়ার্নিং ছাড়াই)
 const emptySubscribe = () => () => {};
 function useIsClient() {
   return useSyncExternalStore(
@@ -26,19 +26,15 @@ function useIsClient() {
 
 export default function Home() {
   const isClient = useIsClient();
-
   const [lang, setLang] = useState<Language>(() => {
     if (typeof window !== "undefined") {
-      const savedLang = localStorage.getItem(
-        "sonar_dam_lang",
-      ) as Language | null;
-      if (savedLang && ["bn", "or", "en", "hi"].includes(savedLang)) {
-        return savedLang;
-      }
+      const saved = localStorage.getItem("sonar_dam_lang") as Language | null;
+      if (saved && ["bn", "or", "en", "hi"].includes(saved)) return saved;
     }
     return "bn";
   });
 
+  const [activeTab, setActiveTab] = useState<MobileTab>("rates");
   const [rates, setRates] = useState<GoldRates | null>(null);
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [updatedAt, setUpdatedAt] = useState<string>("");
@@ -50,6 +46,11 @@ export default function Home() {
   const handleLanguageChange = (newLang: Language) => {
     setLang(newLang);
     localStorage.setItem("sonar_dam_lang", newLang);
+  };
+
+  const handleTabChange = (tab: MobileTab) => {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const loadGoldRates = useCallback(
@@ -83,13 +84,10 @@ export default function Home() {
     };
   }, [loadGoldRates]);
 
-  // ব্রাউজার থেকে ভাষা রিড হওয়ার আগে ফাঁকা ব্যাকগ্রাউন্ড দেখাবে (ফ্ল্যাশ আটকাতে)
-  if (!isClient) {
-    return <div className="min-h-screen bg-[#FAF9F6]" />;
-  }
+  if (!isClient) return <div className="min-h-screen bg-[#FAF9F6]" />;
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6] text-stone-900 selection:bg-amber-200">
+    <div className="min-h-screen bg-[#FAF9F6] text-stone-900 selection:bg-amber-200 pb-24 md:pb-12">
       <Navbar
         lang={lang}
         setLang={handleLanguageChange}
@@ -125,7 +123,9 @@ export default function Home() {
         ) : (
           rates && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div
+                className={`${activeTab === "rates" ? "grid" : "hidden md:grid"} grid-cols-1 md:grid-cols-2 gap-5`}
+              >
                 <RateCard
                   title={t.gold22k}
                   badge={t.hallmark916}
@@ -145,25 +145,33 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex flex-col gap-6 sm:gap-8">
-                {/* মোবাইলে ক্যালেন্ডার আগে দেখাবে (order-1), ডেক্সটপে পরে (md:order-2) */}
-                <div className="order-1 md:order-2">
-                  <PriceCalendar lang={lang} history={history} />
-                </div>
+              <div
+                className={activeTab === "calc" ? "block" : "hidden md:block"}
+              >
+                <Calculator
+                  lang={lang}
+                  rate22k={rates.gold22k_1g}
+                  rate24k={rates.gold24k_1g}
+                />
+              </div>
 
-                {/* মোবাইলে ক্যালকুলেটর নিচে থাকবে (order-2), ডেক্সটপে আগে (md:order-1) */}
-                <div className="order-2 md:order-1">
-                  <Calculator
-                    lang={lang}
-                    rate22k={rates.gold22k_1g}
-                    rate24k={rates.gold24k_1g}
-                  />
-                </div>
+              <div
+                className={
+                  activeTab === "calendar" ? "block" : "hidden md:block"
+                }
+              >
+                <PriceCalendar lang={lang} history={history} />
               </div>
             </>
           )
         )}
       </main>
+
+      <BottomNav
+        lang={lang}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
     </div>
   );
 }
