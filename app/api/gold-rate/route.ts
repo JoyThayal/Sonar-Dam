@@ -5,7 +5,8 @@ const CACHE_DURATION_MS = 3 * 60 * 60 * 1000; // ৩ ঘণ্টা ক্য�
 
 export async function GET() {
   const apiKey = process.env.GOLD_API_KEY;
-  const KOLKATA_LOCAL_PREMIUM_PER_GRAM = 85;
+  // আন্তর্জাতিক স্পট রেটের সাথে ভারতের ইমপোর্ট ডিউটি ও লোকাল বুলিয়ন মার্কেট প্রিমিয়াম (~১৫.৫%)
+  const INDIA_MARKET_FACTOR = 1.155;
   const GST_PERCENTAGE = 0.03;
 
   try {
@@ -75,11 +76,12 @@ export async function GET() {
     );
     const raw22k = raw24k * (22 / 24);
 
+    // কলকাতার আসল বাজারদর ও ৩% GST সহ চূড়ান্ত হিসাব
     const final24k = Math.round(
-      (raw24k + KOLKATA_LOCAL_PREMIUM_PER_GRAM) * (1 + GST_PERCENTAGE),
+      raw24k * INDIA_MARKET_FACTOR * (1 + GST_PERCENTAGE),
     );
     const final22k = Math.round(
-      (raw22k + KOLKATA_LOCAL_PREMIUM_PER_GRAM) * (1 + GST_PERCENTAGE),
+      raw22k * INDIA_MARKET_FACTOR * (1 + GST_PERCENTAGE),
     );
 
     const nowISO = new Date().toISOString();
@@ -97,7 +99,6 @@ export async function GET() {
       { onConflict: "rate_date" },
     );
 
-    // আপডেটেড হিস্ট্রি লিস্ট তৈরি
     const updatedHistory = historyData
       ? [
           {
